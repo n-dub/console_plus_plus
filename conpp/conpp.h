@@ -203,14 +203,17 @@ namespace conpp
 	}
 
 	/**
-	 * @brief This is used for command line options.
+	 * @brief This is used for command line arguments.
 	*/
 	enum class NoType {};
 
 	class ConsoleApp;
 	class CommandLineConfig;
 
-	class CommandLineOptionBase
+	/**
+	 * @brief Base class for command line arguments.
+	*/
+	class CommandLineArgBase
 	{
 		friend class CommandLineConfig;
 		friend class ConsoleApp;
@@ -224,18 +227,18 @@ namespace conpp
 	};
 
 	/**
-	 * @brief A command line option.
-	 * @tparam T Type of option's value. Use enum NoType if it's not needed.
+	 * @brief A command line argument.
+	 * @tparam T Type of argument's value. Use `NoType` if the value is not needed (e.g. for flags).
 	*/
 	template<class T>
-	class CommandLineOption final : public CommandLineOptionBase
+	class CommandLineArg final : public CommandLineArgBase
 	{
 		T m_value{};
 		CommandLineConfig& m_config;
 
 		friend class CommandLineConfig;
 
-		CommandLineOption(CommandLineConfig& cfg) : m_config(cfg) {
+		CommandLineArg(CommandLineConfig& cfg) : m_config(cfg) {
 
 		}
 
@@ -255,105 +258,104 @@ namespace conpp
 		}
 
 	public:
-		CommandLineOption<T>& Name(const char* val) {
+		/**
+		 * @brief Set name of argument.
+		 * @param val The name.
+		 * @return This.
+		*/
+		CommandLineArg<T>& Name(std::string_view val) {
 			m_name = val;
 			return *this;
 		}
 
-		CommandLineOption<T>& Name(const std::string& val) {
-			m_name = val;
-			return *this;
-		}
-
-		CommandLineOption<T>& Name(std::string&& val) {
-			m_name = std::move(val);
-			return *this;
-		}
-
-		CommandLineOption<T>& Help(const char* val) {
+		/**
+		 * @brief Set help message for the argument.
+		 * @param val The message.
+		 * @return This.
+		*/
+		CommandLineArg<T>& Help(std::string_view val) {
 			m_help = val;
 			return *this;
 		}
 
-		CommandLineOption<T>& Help(const std::string& val) {
-			m_help = val;
-			return *this;
-		}
-
-		CommandLineOption<T>& Help(std::string&& val) {
-			m_help = std::move(val);
-			return *this;
-		}
-
-		CommandLineOption<T>& Required(bool val) {
+		/**
+		 * @brief Set if the argument is required.
+		 * @param val True is required.
+		 * @return This.
+		*/
+		CommandLineArg<T>& Required(bool val) {
 			m_req = val;
 			return *this;
 		}
 
+		/**
+		 * @brief Finish the argument.
+		 * @return Instance of `CommandLineConfig`.
+		*/
 		CommandLineConfig& Build() {
 			if (detail::Exceptions && m_name.length() <= 0) {
-				throw std::runtime_error("Name of the option was not specified");
+				throw std::runtime_error("Name of the argument was not specified");
 			}
 			return m_config;
 		}
 	};
 
 	template<>
-	class CommandLineOption<NoType> final : public CommandLineOptionBase
+	class CommandLineArg<NoType> final : public CommandLineArgBase
 	{
 		CommandLineConfig& m_config;
 
 		friend class CommandLineConfig;
 
-		CommandLineOption(CommandLineConfig& cfg) : m_config(cfg) {
+		CommandLineArg(CommandLineConfig& cfg) : m_config(cfg) {
 
 		}
 
 	public:
-		CommandLineOption<NoType>& Name(const char* val) {
+		CommandLineArg<NoType>& Name(const char* val) {
 			m_name = val;
 			return *this;
 		}
 
-		CommandLineOption<NoType>& Name(const std::string& val) {
+		CommandLineArg<NoType>& Name(const std::string& val) {
 			m_name = val;
 			return *this;
 		}
 
-		CommandLineOption<NoType>& Name(std::string&& val) {
+		CommandLineArg<NoType>& Name(std::string&& val) {
 			m_name = std::move(val);
 			return *this;
 		}
 
-		CommandLineOption<NoType>& Help(const char* val) {
+		CommandLineArg<NoType>& Help(const char* val) {
 			m_help = val;
 			return *this;
 		}
 
-		CommandLineOption<NoType>& Help(const std::string& val) {
+		CommandLineArg<NoType>& Help(const std::string& val) {
 			m_help = val;
 			return *this;
 		}
 
-		CommandLineOption<NoType>& Help(std::string&& val) {
+		CommandLineArg<NoType>& Help(std::string&& val) {
 			m_help = std::move(val);
 			return *this;
 		}
 
 		CommandLineConfig& Build() {
 			if (detail::Exceptions && m_name.length() <= 0) {
-				throw std::runtime_error("Name of the option was not specified");
+				throw std::runtime_error("Name of the argument was not specified");
 			}
 			return m_config;
 		}
 	};
 
 	/**
-	 * @brief 
+	 * @brief Command line arguments configuration.
 	*/
 	class CommandLineConfig
 	{
-		std::vector<std::unique_ptr<CommandLineOptionBase>> m_options;
+		std::vector<std::unique_ptr<CommandLineArgBase>> m_options;
 
 		friend class ConsoleApp;
 
@@ -392,29 +394,21 @@ namespace conpp
 
 	public:
 		/**
-		 * @brief Add an option with two hyphens (e.g. --option)
-		 * @tparam T Type of option's value, use NoType if it's not needed.
+		 * @brief Add an argument with two hyphens (e.g. --arg)
+		 * @tparam T Type of argument's value, use NoType if it's not needed.
 		 * @return 
 		*/
 		template<class T>
-		CommandLineOption<T>& AddOption2Hyphens() {
-			m_options.push_back(std::unique_ptr<CommandLineOption<T>>(new CommandLineOption<T>(*this)));
-			return static_cast<CommandLineOption<T>&>(*m_options.back());
-		}
-
-		CommandLineConfig& AddOptionHelp() {
-			AddOption2Hyphens<NoType>()
-				.Name("help")
-				.Help("Print help message")
-				.Build();
-			return *this;
+		CommandLineArg<T>& AddArg2Hyphens() {
+			m_options.push_back(std::unique_ptr<CommandLineArg<T>>(new CommandLineArg<T>(*this)));
+			return static_cast<CommandLineArg<T>&>(*m_options.back());
 		}
 
 		template<class T>
-		T* GetOption(std::string_view name) {
+		T* GetArg(std::string_view name) {
 			for (auto& opt : m_options) {
 				if (opt->m_name == name && opt->m_exists) {
-					CommandLineOption<T>* optT = (CommandLineOption<T>*)(opt.get());
+					CommandLineArg<T>* optT = (CommandLineArg<T>*)(opt.get());
 					return &optT->m_value;
 				}
 			}
@@ -422,7 +416,7 @@ namespace conpp
 			return (T*)nullptr;
 		}
 
-		bool HasOption(std::string_view name) {
+		bool HasArg(std::string_view name) {
 			for (auto& opt : m_options) {
 				if (opt->m_name == name) {
 					return opt->m_exists;
@@ -520,7 +514,7 @@ namespace conpp
 			bool r = false;
 			for (auto& opt : m_args.m_options) {
 				if (!opt->m_exists && opt->m_req) {
-					LogErr("argument \"{:<20} is required", opt->m_name);
+					LogErr("argument \"{}\" is required", opt->m_name);
 					r = true;
 				}
 			}

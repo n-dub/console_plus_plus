@@ -8,36 +8,43 @@ int main(int argc, char** argv) {
 		.UsageDesc("testapp [options...]")
 		.Version("v1.0.0")
 		.CommandLineArgs()
-		.AddOption2Hyphens<int>()
+		.AddArg2Hyphens<int>()
 			.Name("some_int")
 			.Required(true)
 			.Help("Any integer")
 			.Build()
-		.AddOption2Hyphens<NoType>()
+		.AddArg2Hyphens<NoType>()
 			.Name("some_flag")
 			.Help("A flag")
 			.Build()
-		.AddOption2Hyphens<float>()
+		.AddArg2Hyphens<float>()
 			.Name("some_optional_float")
 			.Required(false)
 			.Build()
-		.AddOptionHelp()
+		.AddArg2Hyphens<NoType>()
+			.Name("help")
+			.Help("Print help message")
+			.Build()
 		.Parse(argc, argv);
 
-	if (app.CommandLineArgs().HasOption("help") || app.PrintErrors()) {
-		app.PrintHelp(false);
+	std::cout << FormatStr("A:{:>15.3f}\n", 2.8888);    // 
+	std::cout << FormatStr("A:{:>15.1f}\n", 2.8888);    // 
+	std::cout << FormatStr("A:{:>15.9f}\n", 2.8888);    // 
+
+	if (app.CommandLineArgs().HasArg("help") || app.PrintErrors()) {
+		app.PrintHelp(true);
 		return 0;
 	}
 
-	if (int* val = app.CommandLineArgs().GetOption<int>("some_int"); val) {
+	if (int* val = app.CommandLineArgs().GetArg<int>("some_int"); val) {
 		app.Log(" - {:<20} = {}", "Some Int", *val);
 	}
 
-	if (float* val = app.CommandLineArgs().GetOption<float>("some_optional_float"); val) {
+	if (float* val = app.CommandLineArgs().GetArg<float>("some_optional_float"); val) {
 		app.Log(" - {:<20} = {}", "Some Float", *val);
 	}
 
-	if (app.CommandLineArgs().HasOption("some_flag")) {
+	if (app.CommandLineArgs().HasArg("some_flag")) {
 		app.Log(" - {:<20} = True", "Some Flag");
 	}
 }
