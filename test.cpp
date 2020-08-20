@@ -27,10 +27,6 @@ int main(int argc, char** argv) {
 			.Build()
 		.Parse(argc, argv);
 
-	std::cout << FormatStr("A:{:>15.3f}\n", 2.8888);    // 
-	std::cout << FormatStr("A:{:>15.1f}\n", 2.8888);    // 
-	std::cout << FormatStr("A:{:>15.9f}\n", 2.8888);    // 
-
 	if (app.CommandLineArgs().HasArg("help") || app.PrintErrors()) {
 		app.PrintHelp(true);
 		return 0;

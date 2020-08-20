@@ -25,7 +25,7 @@ if (app.CommandLineArgs().HasArg("help")) { // if has '--help' option
     // Prints this:
     // 
     // TestApp v1.0.0
-    // Just for testing, prints options
+    // Just for testing, does nothing
     // Usage: testapp [options...]
     // Arguments:
     //     --some_int (required) Any integer
