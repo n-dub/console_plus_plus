@@ -448,6 +448,7 @@ namespace conpp
 	class CommandLineConfig
 	{
 		std::vector<std::unique_ptr<CommandLineArgBase>> m_options;
+		std::vector<std::string_view> m_commands;
 
 		friend class ConsoleApp;
 
@@ -488,7 +489,7 @@ namespace conpp
 		/**
 		 * @brief Add an argument with two hyphens (e.g. --arg)
 		 * @tparam T Type of argument's value, use NoType if it's not needed.
-		 * @return 
+		 * @return The created argument.
 		*/
 		template<class T>
 		CommandLineArg<T>& AddArg2Hyphens() {
@@ -517,6 +518,20 @@ namespace conpp
 			return false;
 		}
 
+		/**
+		 * @brief Get commands. Commands are arguments that aren't prefixed with hyphens.
+		 * @return A vector of all commands.
+		*/
+		std::vector<std::string_view>& GetCommands() {
+			return m_commands;
+		}
+
+		/**
+		 * @brief Parse all commands, files, options, etc.
+		 * @param argc Argument count from the main function.
+		 * @param argv Argument vector from the main function.
+		 * @return This.
+		*/
 		CommandLineConfig& Parse(int argc, char** argv) {
 			if (argc == 1) {
 				m_parsingResults.NoArguments = true;
@@ -530,6 +545,7 @@ namespace conpp
 
 			for (size_t i = 0; i < args.size(); ++i) {
 				std::string_view arg = args[i];
+				// an option
 				if (arg.length() > 2 && arg[0] == '-' && arg[1] == '-') {
 					arg = arg.substr(2);
 
@@ -542,6 +558,10 @@ namespace conpp
 							}
 						}
 					}
+				}
+				// a command, file, etc.
+				else {
+					m_commands.push_back(arg);
 				}
 			}
 
@@ -613,6 +633,11 @@ namespace conpp
 		template<class... Args>
 		void LogErr(std::string_view str, Args&&... args) {
 			Log("#{};Error:#{}; {}", Color::Red, Color::Def, FormatStr(str, args...));
+		}
+
+		template<class... Args>
+		void LogWarn(std::string_view str, Args&&... args) {
+			Log("#{};Warning:#{}; {}", Color::Yellow, Color::Def, FormatStr(str, args...));
 		}
 
 		template<class... Args>

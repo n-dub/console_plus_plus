@@ -59,4 +59,15 @@ int main(int argc, char** argv) {
 	if (app.CommandLineArgs().HasArg("some_flag")) {
 		app.Log(" - {:<20} = #{};True#{};", "Some Flag", Color::Aqua, Color::Def);
 	}
+
+	auto& cmd = app.CommandLineArgs().GetCommands();
+	if (cmd.size()) {
+		app.Log("All commands:");
+	}
+	else {
+		app.LogWarn("No commands!");
+	}
+	for (auto& c : cmd) {
+		app.Log("Command: {:>25}", c);
+	}
 }
