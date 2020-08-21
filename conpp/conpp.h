@@ -1,9 +1,16 @@
+#pragma once
 #include <any>
 #include <iostream>
 #include <sstream>
 #include <string_view>
 #include <vector>
 #include <iomanip>
+
+#ifdef _WIN32
+#	define WIN32_LEAN_AND_MEAN
+#	define NOMINMAX
+#	include <Windows.h>
+#endif
 
 #ifndef CONPP_ALLOW_EXCEPTIONS
 #	ifdef NDEBUG
@@ -12,6 +19,57 @@
 #		define CONPP_ALLOW_EXCEPTIONS 1
 #	endif
 #endif
+
+namespace conpp
+{
+	enum class Color
+	{
+		Def = 0xff,
+#ifdef _WIN32
+		Black = 0x0,
+		Navy = 0x1,
+		Green = 0x2,
+		Teal = 0x3,
+		Maroon = 0x4,
+		Purple = 0x5,
+		Olive = 0x6,
+		Silver = 0x7,
+		Gray = 0x8,
+		Blue = 0x9,
+		Lime = 0xa,
+		Aqua = 0xb,
+		Red = 0xc,
+		Fuchsia = 0xd,
+		Yellow = 0xe,
+		White = 0xf
+#else
+		Black = 0,
+		Navy = 4,
+		Green = 2,
+		Teal = 6,
+		Maroon = 1,
+		Purple = 5,
+		Olive = 3,
+		Silver = 7,
+		Gray = 8,
+		Blue = 12,
+		Lime = 10,
+		Aqua = 14,
+		Red = 9,
+		Fuchsia = 13,
+		Yellow = 11,
+		White = 15
+#endif
+	};
+}
+
+namespace std
+{
+	inline ostream& operator<<(ostream& stream, ::conpp::Color col) {
+		stream << int(col);
+		return stream;
+	}
+}
 
 namespace conpp
 {
@@ -59,7 +117,7 @@ namespace conpp
 				}
 			}
 			else {
-				ss << *std::any_cast<std::decay<ArgType>::type>(list.begin() + idx);
+				ss << *std::any_cast<typename std::decay<ArgType>::type>(list.begin() + idx);
 			}
 		}
 
@@ -202,6 +260,46 @@ namespace conpp
 		}
 	}
 
+	class String : public std::string
+	{
+	public:
+		String(const char* str) : std::string(str) {}
+		String(const char* str, size_t len) : std::string(str, len) {}
+		String(const std::string& str) : std::string(str) {}
+		String(std::string&& str) : std::string(std::move(str)) {}
+
+		operator std::string() {
+			return std::string(*(std::string*)this);
+		}
+
+		template<class... Args>
+		String format(Args&&... args) {
+			return FormatStr(data(), args...);
+		}
+	};
+
+	namespace literals {
+		inline ::conpp::String operator""s(const char* str, ::std::size_t len) {
+			return ::conpp::String(str, len);
+		}
+	}
+
+	inline void SetConsoleColor(Color fg) {
+#ifdef _WIN32
+		if (fg == Color::Def) {
+			fg = Color::White;
+		}
+		SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), WORD(fg));
+#else
+		if (fg == Color::Def) {
+			std::cout << "\033[0m";
+		}
+		else {
+			std::cout << FormatStr("\033[38;5;{}m", int(fg));
+		}
+#endif
+	}
+
 	/**
 	 * @brief This is used for command line arguments.
 	*/
@@ -312,33 +410,13 @@ namespace conpp
 		}
 
 	public:
-		CommandLineArg<NoType>& Name(const char* val) {
+		CommandLineArg<NoType>& Name(std::string_view val) {
 			m_name = val;
 			return *this;
 		}
 
-		CommandLineArg<NoType>& Name(const std::string& val) {
-			m_name = val;
-			return *this;
-		}
-
-		CommandLineArg<NoType>& Name(std::string&& val) {
-			m_name = std::move(val);
-			return *this;
-		}
-
-		CommandLineArg<NoType>& Help(const char* val) {
+		CommandLineArg<NoType>& Help(std::string_view val) {
 			m_help = val;
-			return *this;
-		}
-
-		CommandLineArg<NoType>& Help(const std::string& val) {
-			m_help = val;
-			return *this;
-		}
-
-		CommandLineArg<NoType>& Help(std::string&& val) {
-			m_help = std::move(val);
 			return *this;
 		}
 
@@ -466,16 +544,12 @@ namespace conpp
 		CommandLineConfig m_args;
 
 	public:
-		explicit ConsoleApp(const char* name) : m_args(*this) {
+		explicit ConsoleApp(std::string_view name) : m_args(*this) {
 			m_name = name;
 		}
 
-		explicit ConsoleApp(std::string&& name) : m_args(*this) {
-			m_name = std::move(name);
-		}
-
-		explicit ConsoleApp(const std::string& name) : m_args(*this) {
-			m_name = name;
+		~ConsoleApp() {
+			SetConsoleColor(Color::Def);
 		}
 
 		ConsoleApp& Version(std::string_view ver) {
@@ -524,12 +598,24 @@ namespace conpp
 
 		template<class... Args>
 		void LogErr(std::string_view str, Args&&... args) {
-			std::cout << "Error: " << FormatStr(str, args...) << std::endl;
+			Log("#{};Error:#{}; {}", Color::Red, Color::Def, FormatStr(str, args...));
 		}
 
 		template<class... Args>
 		void Log(std::string_view str, Args&&... args) {
-			std::cout << FormatStr(str, args...) << std::endl;
+			auto s = FormatStr(str, args...);
+			str = s;
+			size_t start = 0;
+			for (size_t i = 0; i < str.length(); ++i) {
+				if (i + 2 < str.length() && str[i] == '#') {
+					std::cout << str.substr(start, i - start);
+					++i;
+					SetConsoleColor((Color)detail::ParseInteger<int>(str, i));
+					start = i + 1;
+				}
+			}
+			std::cout << str.substr(start) << std::endl;
+			SetConsoleColor(Color::Def);
 		}
 
 		CommandLineConfig& CommandLineArgs() {

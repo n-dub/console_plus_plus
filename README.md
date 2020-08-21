@@ -55,7 +55,22 @@ FormatStr("A:{:>15.3f}", 2.8888);    // A:          2.889
 FormatStr("B:{:>15.1f}", 2.8888);    // B:            2.9
 FormatStr("C:{:>15.9f}", 2.8888);    // C:         2.8888
 ```
+Or with 's' literal operator:
+```cpp
+using namespace conpp::literals;
+// ...
+// operator""s returns conpp::String which is std::string with format() member function.
+"{} + {} = {}"s.format(2, 2, 5);
+```
+ - Console text coloring (only foreground colors are now supported):
+```cpp
+// Change text color with #<color code here>;
+// Cross-platform color codes are defined in Color enum.
+app.Log("#{};Red#{};Green#{};Blue", Color::Red, Color::Green, Color::Blue);
+```
+Results on windows:\
+![](./screenshots/color_win32.png)\
+Linux (tested with windows subsystem for linux):\
+![](./screenshots/color_linux.png)
 # Building
 No build tools required, just copy the folder 'conpp' to your project and `#include "conpp/conpp.h"`.
-# Usage
-See an example with comments in 'test.cpp'.

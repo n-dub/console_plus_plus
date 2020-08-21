@@ -1,9 +1,11 @@
 #include "conpp/conpp.h"
 
 using namespace conpp;
+using namespace conpp::literals;
 
 int main(int argc, char** argv) {
 	ConsoleApp app("TestApp");
+	app.Log("#{};Red#{};Green#{};Blue", Color::Red, Color::Green, Color::Blue);
 	app.Description("Just for testing, prints options")
 		.UsageDesc("testapp [options...]")
 		.Version("v1.0.0")
@@ -11,7 +13,7 @@ int main(int argc, char** argv) {
 		.AddArg2Hyphens<int>()
 			.Name("some_int")
 			.Required(true)
-			.Help("Any integer")
+			.Help("Any integer: {}, {}, {} etc."s.format(1, 2, 3))
 			.Build()
 		.AddArg2Hyphens<NoType>()
 			.Name("some_flag")
@@ -41,6 +43,6 @@ int main(int argc, char** argv) {
 	}
 
 	if (app.CommandLineArgs().HasArg("some_flag")) {
-		app.Log(" - {:<20} = True", "Some Flag");
+		app.Log(" - {:<20} = #{};True#{};", "Some Flag", Color::Aqua, Color::Def);
 	}
 }
