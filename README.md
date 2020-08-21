@@ -73,4 +73,4 @@ Results on windows:\
 Linux (tested with windows subsystem for linux):\
 ![](./screenshots/color_linux.png)
 # Building
-No build tools required, just copy the folder 'conpp' to your project and `#include "conpp/conpp.h"`.
+Just copy the folder 'conpp' to your project and `#include "conpp/conpp.h"`. A compiler with c++17 support is required.
